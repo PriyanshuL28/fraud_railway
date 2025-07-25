@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+
+# Security - CRITICAL
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+*.crt
+*.p12
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+fraud_detection.log
+errors.log
+/uploads/
+/outputs/
+/visualizations/
+*.csv
+*.xlsx
+*.xls
+
+# Backup files
+*.bak
+*.backup
+*~
+*.tmp
+*.temp
+
+# Railway
+railway.json
+.railway/

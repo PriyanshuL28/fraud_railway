@@ -1,0 +1,310 @@
+**Fraud Score Calculation**
+The system calculates a fraud score (0-100) by analyzing various indicators and applying weights based on their fraud risk significance:insurance fraud detection indicators risk factors10 resultsPredictive Analytics For Insurance Fraud Detection - Wiprowipro.comInsurance Fraud Detection: How to Detect + Prevent It - Blog | Unit21unit21.aiThe Importance of Claims Fraud Detection in the Insurance Industrypilotbird.comHow to Conduct Effective Insurance Fraud Investigationscaseiq.comInsurance Fraud – Definition, Motives and Suspicious Loss Indicatorsgenre.comInsurance fraud and the power of prediction | Ricoh USAricoh-usa.comInsurance Fraud Detection Market Size, Trends | Report 2034expertmarketresearch.comInsurance Topics | Insurance Fraud | NAICnaic.orgFraud Analytics in Insuranceinfosys.comInsurance Fraud Detection Market Size | Mordor Intelligencemordorintelligence.comBased on the fraud detection system and industry best practices, here's how the risk classification works:
+Fraud Indicator Weights & Categories
+
+1. High-Impact Indicators (Weight: 2.0-2.6)
+These are the strongest fraud signals based on industry research showing that certain behaviors have strong correlation with fraudulent claims WiproUnit21:
+
+Multiple Claims from Same Person (2.5): Pattern of repeat claims
+Previous Claims Pattern (2.6): History of suspicious claims
+Attorney Involved Immediately (2.4): Legal representation within 1 day
+Claim Before Termination (2.2): Claims filed shortly before job termination
+Changing Story (2.5): Inconsistent injury descriptions
+Doctor Shopping (2.2): Frequent changes in medical providers
+
+2. Medium-Impact Indicators (Weight: 1.5-1.9)
+These represent moderate fraud risk factors:
+
+New Employee (<30 days) (1.8): Claims from very new employees
+Soft Tissue Injury (1.7): Difficult-to-verify injuries like back/neck pain
+Delayed Reporting (>30 days) (2.0): Late claim reporting
+Treatment Avoidance (1.8): Refusing recommended medical treatment
+No Witness Contacted (1.6): Lack of witness verification
+
+3. Lower-Impact Indicators (Weight: 1.1-1.4)
+These are supporting indicators that add to overall suspicion:
+
+Weekend Injury (1.2): Injuries occurring on weekends
+Summer Claims (1.1): Seasonal patterns
+Near Birthday/Holiday (1.3-1.5): Timing around personal events
+Monday Morning Claims (1.4): Suspicious timing patterns
+
+**************************************************************************************************************************
+📊 Chart-by-Chart Analysis
+1. Fraud Score Distribution Histogramfraud score distribution histogram interpretation insurance10 resultsHealthcare insurance fraud detection using data mining | BMC Medical Informatics and Decision Making | Full Textbiomedcentral.comHealthcare insurance fraud detection using data mining - PMCnih.govInsurance fraud detection: Evidence from artificial intelligence and machine learning - ScienceDirectsciencedirect.comFraud Analytics in Insuranceinfosys.comPredictive Analytics For Insurance Fraud Detection - Wiprowipro.comHistograms Unveiled: Analyzing Numeric Distributions | Atlassianatlassian.comFraud Detection in Healthcare Insurance Claims Using Machine Learningmdpi.comFraud class histogram with the imbalanced dataset.researchgate.netInterpret the key results for Histogram - Minitabminitab.comInsurance fraud and the power of prediction | Ricoh USAricoh-usa.comCode Implementation:
+javascriptrenderFraudScoreChart() {
+    const filteredData = this.applyFilters(this.chartsData.fraudScores || []);
+    
+    const scores = filteredData.map(d => d.score);
+    
+    const trace1 = {
+        x: scores,
+        type: 'histogram',
+        nbinsx: 30,  // 30 bins for good granularity
+        opacity: 0.7,
+        marker: { color: 'rgba(66, 165, 245, 0.7)' },
+        name: 'Claims Count'
+    };
+
+    // Add risk threshold lines
+    const shapes = [
+        { type: 'line', x0: 30, x1: 30, line: { color: 'orange', dash: 'dash' } },
+        { type: 'line', x0: 50, x1: 50, line: { color: 'red', dash: 'dash' } },
+        { type: 'line', x0: 70, x1: 70, line: { color: 'darkred', dash: 'dash' } }
+    ];
+}
+📈 What It Shows:
+
+Distribution shape: Normal distributions appear bell-shaped, while skewed distributions show peaks on one side Fraud class histogram with the imbalanced dataset.
+Risk concentration: Where most claims fall on the fraud score spectrum
+Threshold effectiveness: How well the 30/50/70 thresholds separate risk levels
+
+🔍 Evaluation Criteria:
+
+Healthy Pattern: Most claims should cluster in 0-30 range (Low Risk)
+Red Flags:
+
+High concentration in 70+ range (too many Critical cases)
+Flat distribution (poor discrimination)
+Multiple peaks (inconsistent scoring)
+
+
+
+
+2. Claims Timeline & Fraud Spikes
+Code Implementation:
+javascriptrenderTimelineChart() {
+    // Group by date and calculate statistics
+    const timelineData = {};
+    filteredData.forEach(d => {
+        const date = d.date_of_loss;
+        if (!timelineData[date]) {
+            timelineData[date] = { scores: [], count: 0, highRiskCount: 0 };
+        }
+        timelineData[date].scores.push(d.fraud_score);
+        timelineData[date].count++;
+        if (d.risk_level === 'High' || d.risk_level === 'Critical') {
+            timelineData[date].highRiskCount++;
+        }
+    });
+
+    const trace1 = {
+        x: dates,
+        y: avgScores,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Avg Fraud Score',
+        yaxis: 'y'
+    };
+
+    const trace2 = {
+        x: dates,
+        y: counts,
+        type: 'bar',
+        name: 'Total Claims',
+        yaxis: 'y2'  // Secondary axis
+    };
+}
+📈 What It Shows:
+
+Temporal patterns: Seasonal trends, monthly spikes
+Correlation: Relationship between claim volume and fraud scores
+Anomaly detection: Unusual periods with high fraud activity
+
+🔍 Evaluation Criteria:
+
+Good Pattern: Stable fraud scores over time with predictable seasonal variations
+Investigate:
+
+Sudden spikes in fraud scores
+Periods with high claim volume + high fraud scores
+Cyclical patterns (end of month, holidays)
+
+
+
+
+3. Top Repeat Claimants Analysis
+Code Implementation:
+javascriptrenderClaimantsChart() {
+    // Count claims per claimant
+    const claimantCounts = {};
+    const claimantScores = {};
+    
+    filteredData.forEach(d => {
+        const name = d.claimant_name;
+        claimantCounts[name] = (claimantCounts[name] || 0) + 1;
+        if (!claimantScores[name]) {
+            claimantScores[name] = [];
+        }
+        claimantScores[name].push(d.fraud_score);
+    });
+
+    // Create horizontal bar chart with color coding by avg fraud score
+    const trace = {
+        x: topClaimants.map(d => d.count),
+        y: topClaimants.map(d => d.name),
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+            color: topClaimants.map(d => d.avgScore),
+            colorscale: 'Reds',  // Red indicates higher fraud risk
+            showscale: true
+        }
+    };
+}
+📈 What It Shows:
+
+Repeat offenders: Individuals with multiple claims
+Risk correlation: Average fraud scores for repeat claimants
+Investigation priorities: Focus on high-frequency, high-score claimants
+
+🔍 Evaluation Criteria:
+
+Normal: Few repeat claimants with low average scores
+Concerning: Multiple claimants with 3+ claims and high fraud scores
+Action Items: Top claimants with scores >50 need immediate investigation
+
+
+4. Fraud Indicators Impact Analysis
+Code Implementation:
+javascriptrenderIndicatorsChart() {
+    // Calculate indicator frequencies and average scores
+    const indicators = {};
+    filteredData.forEach(d => {
+        if (d.red_flags && Array.isArray(d.red_flags)) {
+            d.red_flags.forEach(flag => {
+                const cleanFlag = flag.replace(/^\[.*?\]\s*/, '').trim();
+                if (!indicators[cleanFlag]) {
+                    indicators[cleanFlag] = { count: 0, totalScore: 0 };
+                }
+                indicators[cleanFlag].count++;
+                indicators[cleanFlag].totalScore += d.fraud_score;
+            });
+        }
+    });
+
+    // Sort by frequency and show impact
+    const trace = {
+        x: indicatorData.map(d => d.count),
+        y: indicatorData.map(d => d.flag),
+        marker: {
+            color: indicatorData.map(d => d.avgScore),
+            colorscale: 'Reds'  // Color by average fraud score impact
+        }
+    };
+}
+📈 What It Shows:
+
+Indicator effectiveness: Which red flags appear most frequently
+Score impact: Average fraud scores for claims with each indicator
+Pattern validation: Confirming that high-weight indicators actually correlate with higher scores
+
+🔍 Evaluation Criteria:
+
+Effective Indicators: High frequency + high average scores
+Review Needed:
+
+High frequency but low average scores (may need weight adjustment)
+Low frequency but very high scores (rare but important indicators)
+
+
+
+
+5. Injury Types vs Fraud Risk
+Code Implementation:
+javascriptrenderInjuryChart() {
+    // Group by injury type and calculate stats
+    const injuryStats = {};
+    filteredData.forEach(d => {
+        const injury = d.injury_type || 'Unknown';
+        if (!injuryStats[injury]) {
+            injuryStats[injury] = { scores: [], count: 0, highRiskCount: 0 };
+        }
+        injuryStats[injury].scores.push(d.fraud_score);
+        injuryStats[injury].count++;
+        if (d.risk_level === 'High' || d.risk_level === 'Critical') {
+            injuryStats[injury].highRiskCount++;
+        }
+    });
+
+    // Dual-axis chart showing count and average fraud score
+    const trace1 = {
+        y: injuryData.map(d => d.avgScore),
+        name: 'Avg Fraud Score',
+        marker: { color: injuryData.map(d => d.avgScore), colorscale: 'Reds' }
+    };
+
+    const trace2 = {
+        y: injuryData.map(d => d.count),
+        name: 'Claims Count',
+        yaxis: 'y2'
+    };
+}
+📈 What It Shows:
+
+High-risk injury types: Which injuries correlate with higher fraud scores
+Volume vs risk: Balance between frequency and fraud potential
+Medical pattern analysis: Validates soft tissue injury targeting
+
+🔍 Evaluation Criteria:
+
+Expected Pattern: Soft tissue injuries (back, neck) should show higher fraud scores
+Investigate:
+
+Unexpected high-scoring injury types
+Very common injuries with moderate fraud scores
+Injury types with 100% high-risk rates
+
+
+
+
+6. Reporting Delay vs Fraud Risk Correlation
+Code Implementation:
+javascriptrenderTimeLagChart() {
+    const trace = {
+        x: filteredData.map(d => d.days_to_report),
+        y: filteredData.map(d => d.fraud_score),
+        mode: 'markers',
+        type: 'scatter',
+        marker: {
+            size: 8,
+            color: filteredData.map(d => colorMap[d.risk_level]),  // Color by risk level
+            opacity: 0.7
+        }
+    };
+}
+📈 What It Shows:
+
+Delay correlation: Relationship between reporting delay and fraud scores
+Risk clustering: How risk levels distribute across delay periods
+Threshold validation: Effectiveness of 30-day delay threshold
+
+🔍 Evaluation Criteria:
+
+Expected Pattern: Positive correlation (longer delays = higher fraud scores)
+Threshold Check: Claims >30 days should cluster in higher risk levels
+Outliers: Very quick reports with high fraud scores (suspicious urgency)
+
+
+7. Geographic Heatmap
+Code Implementation:
+javascriptrenderMapChart() {
+    const trace = {
+        type: 'choropleth',
+        locationmode: 'USA-states',
+        locations: locations,
+        z: values,  // Can be count, avg_score, or high_risk_percentage
+        colorscale: metric === 'count' ? 'Blues' : 'Reds'
+    };
+}
+📈 What It Shows:
+
+Geographic concentration: States/regions with high fraud activity
+Risk distribution: Average fraud scores by location
+Resource allocation: Where to focus investigation resources
+
+🔍 Evaluation Criteria:
+
+Hot Spots: States with consistently high fraud scores or claim rates
+Resource Planning: High-volume states need more fraud investigators
+Pattern Analysis: Regional variations may indicate organized fraud rings

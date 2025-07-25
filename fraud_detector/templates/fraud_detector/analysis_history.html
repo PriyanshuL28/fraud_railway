@@ -1,0 +1,355 @@
+{% extends 'fraud_detector/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Analysis History - Insurance Fraud Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2">Analysis History</h1>
+            <p class="text-muted">View all past fraud analyses and their results.</p>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{% url 'fraud_detector:upload' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Analysis
+            </a>
+            <a href="{% url 'fraud_detector:index' %}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filter Options -->
+    {% if user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <form method="get" class="d-flex gap-2 align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="user_only" value="true" 
+                           {% if request.GET.user_only == 'true' %}checked{% endif %} id="userOnlyFilter">
+                    <label class="form-check-label" for="userOnlyFilter">
+                        Show only my analyses
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Analyses Table -->
+    <div class="row">
+        <div class="col-12">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Analysis ID</th>
+                            <th>Upload Date</th>
+                            <th>Processing Status</th>
+                            <th>Total Claims</th>
+                            <th>Risk Distribution</th>
+                            <th>High Risk Rate</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for analysis in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>#{{ analysis.id }}</strong>
+                                {% if analysis.user %}
+                                <br><small class="text-muted">by {{ analysis.user.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ analysis.uploaded_at|date:"M d, Y" }}<br>
+                                <small class="text-muted">{{ analysis.uploaded_at|time:"g:i A" }}</small>
+                            </td>
+                            <td>
+                                {% if analysis.processed_at %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Processed
+                                </span>
+                                <br><small class="text-muted">{{ analysis.processed_at|date:"M d, g:i A" }}</small>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-clock"></i> Processing
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ analysis.total_claims|intcomma }}</strong>
+                                {% if analysis.total_claims > 0 %}
+                                <br><small class="text-muted">claims analyzed</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if analysis.total_claims > 0 %}
+                                <div class="d-flex gap-1 flex-wrap">
+                                    {% if analysis.low_risk_count > 0 %}
+                                    <span class="badge bg-success">L: {{ analysis.low_risk_count }}</span>
+                                    {% endif %}
+                                    {% if analysis.medium_risk_count > 0 %}
+                                    <span class="badge bg-info">M: {{ analysis.medium_risk_count }}</span>
+                                    {% endif %}
+                                    {% if analysis.high_risk_count > 0 %}
+                                    <span class="badge bg-warning text-dark">H: {{ analysis.high_risk_count }}</span>
+                                    {% endif %}
+                                    {% if analysis.critical_risk_count > 0 %}
+                                    <span class="badge bg-danger">C: {{ analysis.critical_risk_count }}</span>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if analysis.total_claims > 0 %}
+                                {% with high_risk_total=analysis.high_risk_count|add:analysis.critical_risk_count %}
+                                <strong class="{% if high_risk_total > 10 %}text-danger{% elif high_risk_total > 5 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ high_risk_total }} / {{ analysis.total_claims }}
+                                </strong>
+                                <br><small class="text-muted">high risk claims</small>
+                                {% endwith %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if analysis.processed_at %}
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'fraud_detector:dashboard' analysis.id %}" 
+                                       class="btn btn-sm btn-primary" title="View Dashboard">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                    <a href="{% url 'fraud_detector:claims_table' analysis.id %}" 
+                                       class="btn btn-sm btn-info" title="View Claims">
+                                        <i class="fas fa-table"></i>
+                                    </a>
+                                    {% if analysis.high_risk_count > 0 or analysis.critical_risk_count > 0 %}
+                                    <a href="{% url 'fraud_detector:high_risk_claims' analysis.id %}" 
+                                       class="btn btn-sm btn-warning" title="High Risk Claims">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'fraud_detector:download_file' analysis.id 'full' %}" 
+                                       class="btn btn-sm btn-success" title="Download Results">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">
+                                    <i class="fas fa-spinner fa-spin"></i> Processing...
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                                    <h5>No analyses found</h5>
+                                    <p>Upload your first CSV file to get started with fraud detection.</p>
+                                    <a href="{% url 'fraud_detector:upload' %}" class="btn btn-primary">
+                                        <i class="fas fa-upload"></i> Upload CSV
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.user_only %}&user_only={{ request.GET.user_only }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i> First
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.user_only %}&user_only={{ request.GET.user_only }}{% endif %}">
+                            <i class="fas fa-angle-left"></i> Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.user_only %}&user_only={{ request.GET.user_only }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.user_only %}&user_only={{ request.GET.user_only }}{% endif %}">
+                            Next <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.user_only %}&user_only={{ request.GET.user_only }}{% endif %}">
+                            Last <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <div class="text-center text-muted">
+                <small>
+                    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} analyses
+                </small>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <div class="text-muted">
+                    <i class="fas fa-chart-line fa-4x mb-4"></i>
+                    <h3>No Analyses Yet</h3>
+                    <p class="lead">Start by uploading a CSV file containing insurance claims data.</p>
+                    <a href="{% url 'fraud_detector:upload' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-upload"></i> Upload Your First CSV
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Summary Statistics -->
+    {% if page_obj %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie"></i> Analysis Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ page_obj.paginator.count }}</h4>
+                                <small class="text-muted">Total Analyses</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h4 class="text-info">-</h4>
+                                <small class="text-muted">Total Claims Processed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h4 class="text-warning">-</h4>
+                                <small class="text-muted">High Risk Claims</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-danger">-</h4>
+                            <small class="text-muted">Critical Risk Claims</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Custom styles for analysis history */
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.btn-group .btn {
+    border-radius: 0.25rem;
+    margin-right: 2px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.border-end {
+    border-right: 1px solid #dee2e6 !important;
+}
+
+@media (max-width: 768px) {
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+    }
+}
+</style>
+
+<script>
+// Add some interactive features
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh for processing analyses
+    const processingRows = document.querySelectorAll('tbody tr');
+    let hasProcessing = false;
+    
+    processingRows.forEach(row => {
+        const badge = row.querySelector('.badge.bg-warning');
+        if (badge && badge.textContent.includes('Processing')) {
+            hasProcessing = true;
+        }
+    });
+    
+    // Refresh page every 30 seconds if there are processing analyses
+    if (hasProcessing) {
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    }
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}
