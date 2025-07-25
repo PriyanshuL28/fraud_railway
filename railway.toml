@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn insurance_fraud_detection.wsgi:application --bind 0.0.0.0:$PORT"
-healthcheckPath = "/fraud_detector/"
+startCommand = "gunicorn insurance_fraud_detection.wsgi:application --bind 0.0.0.0:$PORT"
+healthcheckPath = "/fraud_detector/health/"
 healthcheckTimeout = 300
 restartPolicyType = "always"

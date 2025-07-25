@@ -6,6 +6,9 @@ from . import views
 app_name = 'fraud_detector'
 
 urlpatterns = [
+    # Health check endpoint (add this at the top)
+    path('health/', views.health_check, name='health_check'),
+    
     # Main pages
     path('', views.index, name='index'),
     path('upload/', views.upload_file, name='upload'),

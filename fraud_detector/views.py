@@ -1135,3 +1135,10 @@ def custom_500(request):
 def custom_403(request, exception):
     """Custom 403 forbidden page"""
     return render(request, '403.html', status=403)
+
+
+from django.http import JsonResponse
+
+def health_check(request):
+    """Simple health check endpoint that doesn't require database access"""
+    return JsonResponse({'status': 'ok', 'service': 'fraud-detector'})
