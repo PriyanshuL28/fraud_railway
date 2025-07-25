@@ -2,7 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "gunicorn insurance_fraud_detection.wsgi:application --bind 0.0.0.0:$PORT"
-healthcheckPath = "/fraud_detector/health/"
-healthcheckTimeout = 300
+startCommand = "gunicorn insurance_fraud_detection.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
 restartPolicyType = "always"
